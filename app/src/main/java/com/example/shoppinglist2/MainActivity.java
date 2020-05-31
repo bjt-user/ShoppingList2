@@ -10,6 +10,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
@@ -35,12 +36,17 @@ import java.io.IOException;
 //answer from stackoverflow: Use LinearLayout with orientation verticle and add views
 // in that layout.
 
+//does not work on my newer phone (file not found)
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     //the app failed when one path was ...DIRECTORY_DOCUMENTS
     private static final String FILE_PATH = Environment.getExternalStoragePublicDirectory
             (Environment.DIRECTORY_DOWNLOADS).toString() + "/shoppinglist.txt";
     private static final String TEMP_FILE_PATH = Environment.getExternalStoragePublicDirectory
             (Environment.DIRECTORY_DOWNLOADS).toString() + "/tempfile.txt";
+    //paths for api level 29 and higher
+    private String FPATH29;
+    private String TFPATH29;
 
     private EditText et1;
     private ScrollView sv1;
@@ -50,13 +56,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String[] inputProducts;
     private String deleteItem;
     private InputMethodManager inputManager;
+    private int apiLevel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        apiLevel = Build.VERSION.SDK_INT;
 
+        if(apiLevel >= 29) {
+            Toast.makeText(MainActivity.this,
+                    "your android api level is 29 or higher," +
+                            " your file will be stored in the internal storage of" +
+                            " this app", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(MainActivity.this,
+                    "your android api level is lower than 29, " +
+                            "your file will be stored in the download folder",
+                    Toast.LENGTH_SHORT).show();
+        }
+        //building the path for the awful api 29
+        FPATH29 = this.getFilesDir() + "/shoppinglist.txt";
+        TFPATH29 = this.getFilesDir() + "/tempfile.txt";
 
         et1 = findViewById(R.id.editText);
         sv1 = findViewById(R.id.scrollView);
@@ -121,13 +143,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Chip chip = (Chip) v;
         deleteItem = chip.getText().toString();
 
-        File inputFile = new File(FILE_PATH);
-        File tempFile = new File(TEMP_FILE_PATH);
+        File inputFile;
+        File tempFile;
+        if(apiLevel>=29) {
+            inputFile = new File(FPATH29);
+            tempFile = new File(TFPATH29);
+        } else {
+            inputFile = new File(FILE_PATH);
+            tempFile = new File(TEMP_FILE_PATH);
+        }
 
         try {
             FileReader fileReader = new FileReader(inputFile);
             BufferedReader reader = new BufferedReader(fileReader);
-            FileOutputStream fos = new FileOutputStream(TEMP_FILE_PATH, true);
+            FileOutputStream fos;
+            if(apiLevel>=29) {
+                fos = new FileOutputStream(TFPATH29, true);
+            } else {
+                fos = new FileOutputStream(TEMP_FILE_PATH, true);
+            }
 
             String currentLine;
 
@@ -159,7 +193,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void saveToFile(String[] products) {
         try {
-            FileOutputStream fos = new FileOutputStream(FILE_PATH, true);
+            FileOutputStream fos;
+            if(apiLevel>=29) {
+                fos = new FileOutputStream(FPATH29, true);
+            } else {
+                fos = new FileOutputStream(FILE_PATH, true);
+            }
 
             String addedString;
             for(int i = 0; i<products.length; i++) {
@@ -183,7 +222,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void readFile() {
-        File file = new File(FILE_PATH);
+        File file;
+        if(apiLevel>=29) {
+            file = new File(FPATH29);
+        } else {
+            file = new File(FILE_PATH);
+        }
         StringBuilder stringBuilder = new StringBuilder();
         try {
             FileReader fileReader = new FileReader(file);
@@ -233,11 +277,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void deleteAll() {
-        File inputFile = new File(FILE_PATH);
-        File tempFile = new File(TEMP_FILE_PATH);
+        File inputFile;
+        File tempFile;
+        if(apiLevel>=29) {
+            inputFile = new File(FPATH29);
+            tempFile = new File(TFPATH29);
+        } else {
+            inputFile = new File(FILE_PATH);
+            tempFile = new File(TEMP_FILE_PATH);
+        }
 
         try {
-            FileOutputStream fos = new FileOutputStream(TEMP_FILE_PATH, true);
+            FileOutputStream fos;
+            if(apiLevel>=29) {
+                fos = new FileOutputStream(TFPATH29);
+            } else {
+                fos = new FileOutputStream(TEMP_FILE_PATH, true);
+            }
 
             fos.close();
 
